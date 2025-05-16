@@ -41,17 +41,17 @@ while(tentativas<=5):
             usadas = []
             for j  in range(tamanho):
                 if(i == j and palavra_user[i] == palavra_comp[i] and b==0 and palavra_user[i] not in usadas):
-                    print(f"A letra {palavra_user[i]}, posicao {i+1} esta correta.")
+                    print(f"A letra \033[32m{palavra_user[i]}\033[m, posicao {i+1} esta correta.")
                     a = 1
                     usadas.append(palavra_user[i])
                     break
                 if(palavra_user[i] == palavra_comp[j] and i!=j and a==0 and palavra_user[i] not in usadas):
-                    print(f"A letra {palavra_user[i]} esta correta mas na posicao errada.")
+                    print(f"A letra \033[33m{palavra_user[i]}\033[m esta correta mas na posicao errada.")
                     usadas.append(palavra_user[i])
                     b = 1
                     continue
             if(a==0 and b==0):
-                print(f"A letra {palavra_user[i]} esta errada")
+                print(f"A letra \033[31m{palavra_user[i]}\033[m esta errada")
                 usadas.append(palavra_user[i])
         tentativas = tentativas + 1
         palavra_user = input("Tente de novo:")
