@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 typedef struct {
     char nome[100];
@@ -7,14 +8,40 @@ typedef struct {
     double saldo;
 } Usuario;
 
-Usuario usuario[100];
+Usuario *usuario;
 
 int total_users = 0;
 int id = 0;
 int usuarios_excluidos[100];
 int id_excluido=-1;
 int quantidade_de_exclusoes=-1;
+int capacidade_maxima=0;
 
+void alocar_usuario()
+{
+    if(total_users==0)
+    {
+        capacidade_maxima = 50;
+        usuario = (Usuario*)malloc(capacidade_maxima*sizeof(Usuario));
+        if(usuario==NULL)
+        {
+            printf("Nao foi possivel alocar a memoria dinamicamente");
+            exit(EXIT_FAILURE);
+        }
+    }
+    else if(total_users>=capacidade_maxima)
+    {
+        capacidade_maxima +=50;
+        Usuario *temp = (Usuario*)realloc(usuario, capacidade_maxima*sizeof(Usuario));
+        if(temp==NULL)
+        {
+            printf("Erro ao realocar a memoria");
+            free(usuario);
+            exit(EXIT_FAILURE);
+        }
+        usuario = temp;
+    }
+}
 void criar_usuario()
 {
     char nome2[100];
@@ -47,11 +74,20 @@ void carrega_usuarios()
         printf("Arquivo de usuarios nao encontrado. Nenhum usuario carregado.\n");
         return;
     }
-    int total_users_anterior = total_users;
-    while (fscanf(f, " %99[^,], %d, %lf\n", usuario[total_users].nome, &usuario[total_users].idade, &usuario[total_users].saldo) == 3) {
+    total_users = 0;
+    capacidade_maxima = 0;
+    if (usuario != NULL) {
+        free(usuario);
+        usuario = NULL;
+    }
+    Usuario temp_user;
+    while (fscanf(f, " %99[^,], %d, %lf\n", temp_user.nome, &temp_user.idade, &temp_user.saldo) == 3) {
+        alocar_usuario();
+        strcpy(usuario[total_users].nome, temp_user.nome);
+        usuario[total_users].idade = temp_user.idade;
+        usuario[total_users].saldo = temp_user.saldo;
         total_users++;
     }
-    total_users = total_users - total_users_anterior;
     fclose(f);
 }
 
@@ -78,7 +114,6 @@ void criar_varios_usuarios()
     printf("Digite quantos usuarios voce quer cadastrar:");
     scanf("%d", &n);
     for (int i = 1; i <= n; i++) {
-        char nome2[100];
         printf("\nDigite seu nome, idade e saldo atual: ");
         scanf("%100[^,], %d, %lf", usuario[total_users].nome, &usuario[total_users].idade, &usuario[total_users].saldo);
         total_users++;
@@ -93,7 +128,7 @@ void transferencia()
     printf("Digite o id do usuario que vai transferir:");
     scanf("%d", &id);
     id1 = id;
-    if(strcmp(usuario[id1].nome,"Usuario removido")==0 || id1<0 || id1>total_users)
+    if(strcmp(usuario[id1].nome,"Usuario removido")==0 || id1<0 || id1>total_users-1)
     {
         printf("Erro: usuario removido ou inexistente\n");
         return;
@@ -101,13 +136,18 @@ void transferencia()
     printf("Digite o valor a ser transferido:");
     scanf("%d", &valor);
     if (valor > usuario[id1].saldo || valor < 0) {
-        printf("Erro. Valor indisponivel.");
+        printf("Erro. Valor indisponivel.\n");
         return;
     } else {
         printf("Digite o id do usuario que vai receber a transferencia:");
         scanf("%d", &id);
         id2 = id;
-        if(strcmp(usuario[id].nome,"Usuario removido")==0 || id2<0 || id2>total_users)
+        if(id2 == id1)
+        {
+            printf("Erro: transferencia propria\n");
+            return;
+        }
+        else if(strcmp(usuario[id].nome,"Usuario removido")==0 || id2<0 || id2>total_users-1)
         {
             printf("Erro: usuario removido ou inexistente\n");
             return;
@@ -125,6 +165,11 @@ void excluir()
     printf("Digite o id que voce deseja excluir:");
     scanf("%d",&id);
     id_excluido = id;
+    if(strcmp(usuario[id_excluido].nome,"Usuario removido")==0 || id_excluido<0 || id_excluido>total_users-1)
+    {
+        printf("Erro: usuario removido ou inexistente\n");
+        return;
+    }
     usuarios_excluidos[++quantidade_de_exclusoes] = id_excluido;
     strcpy(usuario[id_excluido].nome, "Usuario removido");
     salva_usuarios();
@@ -132,14 +177,15 @@ void excluir()
     salva_usuarios();
     usuario[id_excluido].saldo = -1;
     salva_usuarios();
-    total_users--;
     printf("Usuario removido com sucesso\n");
 }
 
 int main()
 {
+    alocar_usuario();
     carrega_usuarios();
     int sele;
+    printf("||||| <------ MENU ------> |||||\n");
     printf("1- Criar um usuario\n");
     printf("2- Criar varios usuarios\n");
     printf("3- Buscar um usuario por id\n");
@@ -155,6 +201,7 @@ int main()
         }
     else if (sele == 1)
         {
+        alocar_usuario();
         criar_usuario();
         salva_usuarios();
         main();
@@ -181,6 +228,8 @@ int main()
         }
     else
         {
+        printf("Programa encerrado.");
+        free(usuario);
         return 0;
         }
 }
